@@ -1,11 +1,11 @@
-package com.otto.catfish.task.pizza;
+package com.otto.catfish.pizza.order;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class PizzaShoppingApplication {
+public class OrderServiceApplication {
 	public static void main(String[] args) {
-		SpringApplication.run(PizzaShoppingApplication.class, args);
+		SpringApplication.run(OrderServiceApplication.class, args);
 	}
 }
