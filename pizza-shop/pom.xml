@@ -5,19 +5,19 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.3</version>
+		<version>2.5.4</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 
 	<groupId>com.otto.catfish.task.pizza</groupId>
-	<artifactId>pizza-shop</artifactId>
+	<artifactId>order-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>pizza-shop</name>
-	<description>Pizza Online Shopping</description>
-	<properties>
-		<java.version>1.8</java.version>
-	</properties>
-
+	<name>pizza-order-service</name>
+	<description>Pizza Online Shopping - Order Service</description>
+	<!-- <properties>
+		<java.version>11</java.version>
+	</properties> -->
+ 
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -44,6 +44,10 @@
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
 		</dependency>
 	</dependencies>
 </project>
