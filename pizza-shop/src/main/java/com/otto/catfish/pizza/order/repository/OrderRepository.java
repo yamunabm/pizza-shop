@@ -8,11 +8,10 @@ import org.springframework.stereotype.Repository;
 import com.otto.catfish.pizza.order.model.Order;
 
 @Repository
-public interface OrderRepository extends JpaRepository<Order, Long>{
+public interface OrderRepository extends JpaRepository<Order, Long> {
 
-	//public CustomerOrder findByTrackingNumber(String trackingNumber);
 	public List<Order> findByCustomerEmailId(String emailId);
-	
+
 	public Order findByOrderId(Long orderId);
 
 }
