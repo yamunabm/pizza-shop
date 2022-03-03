@@ -8,14 +8,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.otto.catfish.pizza.order.clienthandler.RestClientHandler;
 import com.otto.catfish.pizza.order.common.Constants;
 import com.otto.catfish.pizza.order.common.OrderEventType;
 import com.otto.catfish.pizza.order.datasender.OrderRequestMessageSender;
 import com.otto.catfish.pizza.order.datasender.StockUpdateMessageSender;
 import com.otto.catfish.pizza.order.exception.NotAllowedToCancelException;
+import com.otto.catfish.pizza.order.exception.OrderServiceException;
 import com.otto.catfish.pizza.order.exception.PaymentFailedException;
 import com.otto.catfish.pizza.order.io.AddressVO;
 import com.otto.catfish.pizza.order.io.ItemVO;
+import com.otto.catfish.pizza.order.io.OrderObject;
 import com.otto.catfish.pizza.order.io.OrderRequest;
 import com.otto.catfish.pizza.order.io.OrderResponse;
 import com.otto.catfish.pizza.order.io.OrderWrapper;
@@ -40,7 +43,10 @@ public class OrderServiceImpl implements OrderService {
 
 	@Autowired
 	private OrderRequestMessageSender orderkafkaMessageSender;
-	
+
+	@Autowired
+	private RestClientHandler restClientHandler;
+
 	@Value("${order.check.status.url}")
 	private String orderStatusUrl;
 
@@ -57,11 +63,11 @@ public class OrderServiceImpl implements OrderService {
 		// make payment
 		Payment paymentId = makePayment(orderRequest);
 		orderRequest.setPayment(paymentId);
-		
+
 		// save address
 		Address saveAddress = saveAddress(orderRequest);
 		orderRequest.getAddress().setAddressId(saveAddress.getAddressId());
-		
+
 		// Kafka: push order request to kafka
 		OrderWrapper orderWarapper = new OrderWrapper(OrderEventType.NEW, orderRequest);
 		orderkafkaMessageSender.sendData(orderWarapper);
@@ -107,25 +113,24 @@ public class OrderServiceImpl implements OrderService {
 	}
 
 	@Override
-	public void cancelOrder(String orderId) throws NotAllowedToCancelException {
+	public OrderResponse cancelOrder(String orderId) throws NotAllowedToCancelException, OrderServiceException {
 
 		// get Order status from notification service TODO
-		OrderEventType orderStatus = OrderEventType.CREATED;
 
-		if (!OrderEventType.isAllwedToCancel(OrderEventType.CREATED.getStatusId())) {
+		OrderObject callGetOrder = restClientHandler.callGetOrder(orderId);
+
+		if (!OrderEventType.isAllwedToCancel(callGetOrder.getOrderStatus().getStatusId())) {
 			throw new NotAllowedToCancelException("Product is not allaowed to cancel.");
 		}
 
-		// update order status
 		updateOrderStatus(orderId, OrderEventType.CANCELLED);
 
-		// rollback payment
+		// TODO rollback payment
 
 		// Restore stock
 		// restoreStock(order);
 
-		// return new OrderResponse(orderId,
-		// "http://localhost:9080/pizza/v1/orderfulfillment/" + orderId);
+		return new OrderResponse(orderId, orderStatusUrl + orderId);
 
 	}
 
