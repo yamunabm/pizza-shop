@@ -25,6 +25,7 @@ import com.sun.istack.NotNull;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -35,6 +36,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "OnlineOrder")
+@Builder
 public class Order implements Serializable {
 
 	private static final long serialVersionUID = 1L;

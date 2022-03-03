@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.otto.catfish.pizza.order.exception.NotAllowedToCancelException;
+import com.otto.catfish.pizza.order.exception.OrderServiceException;
 import com.otto.catfish.pizza.order.exception.PaymentFailedException;
 import com.otto.catfish.pizza.order.io.OrderRequest;
 import com.otto.catfish.pizza.order.io.OrderResponse;
@@ -22,17 +23,19 @@ public class OrderController {
 	private OrderService orderService;
 
 	@PostMapping
-	public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest orderRequest) throws PaymentFailedException {
+	public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest orderRequest)
+			throws PaymentFailedException {
 
 		OrderResponse orders = orderService.createOrder(orderRequest);
-		return ResponseEntity.ok(orders);  
+		return ResponseEntity.ok(orders);
 	}
-	
-	@DeleteMapping("/{orderId}")
-	public ResponseEntity<String> cancelOrder(@PathVariable("orderId") String orderId) throws NotAllowedToCancelException {
 
-		orderService.cancelOrder(orderId);
-		return ResponseEntity.ok("Success"); 
+	@DeleteMapping("/{orderId}")
+	public ResponseEntity<OrderResponse> cancelOrder(@PathVariable("orderId") String orderId)
+			throws NotAllowedToCancelException, OrderServiceException {
+
+		OrderResponse cancelOrder = orderService.cancelOrder(orderId);
+		return ResponseEntity.ok(cancelOrder);
 	}
 
 }
