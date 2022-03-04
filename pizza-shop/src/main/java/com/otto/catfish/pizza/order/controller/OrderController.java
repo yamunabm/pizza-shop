@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.otto.catfish.pizza.order.exception.NotAllowedToCancelException;
 import com.otto.catfish.pizza.order.exception.OrderServiceException;
+import com.otto.catfish.pizza.order.exception.OutOfStockException;
 import com.otto.catfish.pizza.order.exception.PaymentFailedException;
 import com.otto.catfish.pizza.order.io.OrderRequest;
 import com.otto.catfish.pizza.order.io.OrderResponse;
@@ -24,7 +25,7 @@ public class OrderController {
 
 	@PostMapping
 	public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest orderRequest)
-			throws PaymentFailedException {
+			throws PaymentFailedException, OrderServiceException, OutOfStockException {
 
 		OrderResponse orders = orderService.createOrder(orderRequest);
 		return ResponseEntity.ok(orders);

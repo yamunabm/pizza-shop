@@ -15,6 +15,7 @@ import com.otto.catfish.pizza.order.datasender.OrderRequestMessageSender;
 import com.otto.catfish.pizza.order.datasender.StockUpdateMessageSender;
 import com.otto.catfish.pizza.order.exception.NotAllowedToCancelException;
 import com.otto.catfish.pizza.order.exception.OrderServiceException;
+import com.otto.catfish.pizza.order.exception.OutOfStockException;
 import com.otto.catfish.pizza.order.exception.PaymentFailedException;
 import com.otto.catfish.pizza.order.io.AddressVO;
 import com.otto.catfish.pizza.order.io.ItemVO;
@@ -44,14 +45,14 @@ public class OrderServiceImpl implements OrderService {
 	@Autowired
 	private OrderRequestMessageSender orderkafkaMessageSender;
 
-	@Autowired
 	private RestClientHandler restClientHandler;
 
 	@Value("${order.check.status.url}")
 	private String orderStatusUrl;
 
 	@Override
-	public OrderResponse createOrder(OrderRequest orderRequest) throws PaymentFailedException {
+	public OrderResponse createOrder(OrderRequest orderRequest)
+			throws PaymentFailedException, OrderServiceException, OutOfStockException {
 
 		// TODO: generate order id and inject to request
 		String orderId = UUID.randomUUID().toString();
@@ -65,8 +66,10 @@ public class OrderServiceImpl implements OrderService {
 		orderRequest.setPayment(paymentId);
 
 		// save address
-		Address saveAddress = saveAddress(orderRequest);
-		orderRequest.getAddress().setAddressId(saveAddress.getAddressId());
+		if (orderRequest.getAddress().getAddressId() == null) {
+			Address saveAddress = saveAddress(orderRequest);
+			orderRequest.getAddress().setAddressId(saveAddress.getAddressId());
+		}
 
 		// Kafka: push order request to kafka
 		OrderWrapper orderWarapper = new OrderWrapper(OrderEventType.NEW, orderRequest);
@@ -76,9 +79,21 @@ public class OrderServiceImpl implements OrderService {
 		return new OrderResponse(orderId, orderStatusUrl + orderId);
 	}
 
-	private void lockOrder(OrderRequest orderRequest, String orderId) {
+	private void lockOrder(OrderRequest orderRequest, String orderId)
+			throws OrderServiceException, OutOfStockException {
+
+		restClientHandler = new RestClientHandler();
+		restClientHandler.setBaseUrl("http://localhost:9000/pizza/v1/item");
+
 		List<Item> stocks = new ArrayList<Item>();
 		for (ItemVO itemReq : orderRequest.getItems()) {
+
+			int stockCount = restClientHandler.callGetStockCount(itemReq.getItemId());
+
+			if (stockCount < itemReq.getQuantity())
+				throw new OutOfStockException("Requested item " + itemReq.getItemId() + " count "
+						+ itemReq.getQuantity() + "  is not available.");
+
 			Item item = new Item();
 			item.setItemId(itemReq.getItemId());
 			item.setStock(itemReq.getQuantity());
@@ -117,6 +132,8 @@ public class OrderServiceImpl implements OrderService {
 
 		// get Order status from notification service TODO
 
+		restClientHandler = new RestClientHandler();
+		restClientHandler.setBaseUrl("http://localhost:8090/pizza/v1/orderfulfillment");
 		OrderObject callGetOrder = restClientHandler.callGetOrder(orderId);
 
 		if (!OrderEventType.isAllwedToCancel(callGetOrder.getOrderStatus().getStatusId())) {

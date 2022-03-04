@@ -13,10 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.otto.catfish.pizza.order.exception.OrderServiceException;
 import com.otto.catfish.pizza.order.io.OrderObject;
 
@@ -25,14 +22,9 @@ public class RestClientHandler {
 	@Autowired
 	private ApplicationContext ctx;
 
-	@Autowired
 	private RestTemplate restTemplate;
 
-	private static final String APIKEY = "APIkey";
-
 	private String baseUrl;
-
-	private String api;
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
@@ -54,47 +46,34 @@ public class RestClientHandler {
 		return headers;
 	}
 
-	@HystrixCommand(fallbackMethod = "callGetOrderFallback", commandProperties = {
-			@HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "5000") })
+//	@HystrixCommand(fallbackMethod = "callGetOrderFallback", commandProperties = {
+//			@HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "5000") })
 	public OrderObject callGetOrder(String orderId) throws OrderServiceException {
+
+		restTemplate = new RestTemplate();
 		Map<String, String> queryParams = new HashMap<>();
 		queryParams.put("orderId", orderId);
 		try {
-			UriComponentsBuilder builder = getUriComponentsBuilder(baseUrl, queryParams);
+			baseUrl = baseUrl + "/" + orderId;
 			return this.restTemplate
-					.exchange(builder.toUriString(), HttpMethod.GET, new HttpEntity<>(getHeaders()), OrderObject.class)
-					.getBody();
+					.exchange(baseUrl, HttpMethod.GET, new HttpEntity<>(getHeaders()), OrderObject.class).getBody();
 		} catch (RestClientException e) {
-			throw new OrderServiceException("Get League failed over :" + baseUrl, e);
+			throw new OrderServiceException("Get order over :" + baseUrl, e);
 		}
 	}
 
-//	private OrderObject callGetOrderFallback(String orderId) {
-//
-//		System.out.println("CIRCUIT BREAKER ENABLED!!! Payment service is down!!! fallback route enabled...");
-//
-//		return null;
-//	}
+	public int callGetStockCount(Long itemId) throws OrderServiceException {
 
-	private UriComponentsBuilder getUriComponentsBuilder(String url, Map<String, String> queryParams) {
-		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url).queryParam(APIKEY, api);
-		queryParams.forEach(builder::queryParam);
-		return builder;
+		restTemplate = new RestTemplate();
+		try {
+			baseUrl = baseUrl + "/" + itemId;
+			@SuppressWarnings("unchecked")
+			HashMap<String, Integer> body = this.restTemplate
+					.exchange(baseUrl, HttpMethod.GET, new HttpEntity<>(getHeaders()), HashMap.class).getBody();
+			return body.get("stock");
+		} catch (RestClientException e) {
+			throw new OrderServiceException("Get item count failed over :" + baseUrl, e);
+		}
 	}
-
-	//	@HystrixCommand(fallbackMethod = "callGetOrderFallback", commandProperties = {
-	//	@HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "5000") })
-	//public OrderObject callPayment(Payment payment) throws OrderServiceException {
-	//Map<String, String> queryParams = new HashMap<>();
-	//queryParams.put("payment", payment);
-	//try {
-	//	UriComponentsBuilder builder = getUriComponentsBuilder(baseUrl, queryParams);
-	//	return this.restTemplate
-	//			.exchange(builder.toUriString(), HttpMethod.GET, new HttpEntity<>(getHeaders()), OrderObject.class)
-	//			.getBody();
-	//} catch (RestClientException e) {
-	//	throw new OrderServiceException("Get payment failed over :" + baseUrl, e);
-	//}
-	//}
 
 }

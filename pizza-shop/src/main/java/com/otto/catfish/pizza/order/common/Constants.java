@@ -9,6 +9,7 @@ public interface Constants {
 	public static final String RESTORE_STOCK = "RESTORE_STOCK";
 	public static String UNIQUE_ID = UUID.randomUUID().toString();
 	static final String PAYMENT_FAILED = "PAYMENT_FAILED";
+	public static final String OUT_OF_STOCK = "OUT_OF_STOCK";
 
 	interface Swagger {
 		String PROJECT_NAME = "pizza-ship";

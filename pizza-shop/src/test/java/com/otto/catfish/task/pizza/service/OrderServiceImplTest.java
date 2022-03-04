@@ -30,6 +30,7 @@ import com.otto.catfish.pizza.order.datasender.OrderRequestMessageSender;
 import com.otto.catfish.pizza.order.datasender.StockUpdateMessageSender;
 import com.otto.catfish.pizza.order.exception.NotAllowedToCancelException;
 import com.otto.catfish.pizza.order.exception.OrderServiceException;
+import com.otto.catfish.pizza.order.exception.OutOfStockException;
 import com.otto.catfish.pizza.order.exception.PaymentFailedException;
 import com.otto.catfish.pizza.order.io.AddressVO;
 import com.otto.catfish.pizza.order.io.ItemVO;
@@ -130,7 +131,7 @@ public class OrderServiceImplTest {
 	}
 
 	@Test
-	public void createOrderWithValidRequest_Success() throws PaymentFailedException {
+	public void createOrderWithValidRequest_Success() throws PaymentFailedException, OrderServiceException, OutOfStockException {
 		doNothing().when(orderkafkaMessageSender).sendData(any());
 
 		Address addressEntity = new Address();
