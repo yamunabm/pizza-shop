@@ -116,3 +116,7 @@ java -jar target/order-service-0.0.1-SNAPSHOT.jar
 java -jar target/stock-service-0.0.1-SNAPSHOT.jar
 java -jar target/order-fulfillment-service-0.0.1-SNAPSHOT.jar
 
+
+Note: Since no customer and payment services are present, all the information related to customer and payment are stored in order-service temporarily.
+      But in the real case ORder-service will not have any disk storage
+
