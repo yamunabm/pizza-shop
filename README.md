@@ -107,3 +107,12 @@ response:
     "location": "http://localhost:8090/pizza/v1/orderfulfillment/d865749e-9aa1-4170-b97c-cf79c954ce11"
 }
 ```
+
+How to run:
+Make sure Zookeeper and kafka are running on default ports.
+hit the below command in the project home directory in the respective project
+
+java -jar target/order-service-0.0.1-SNAPSHOT.jar
+java -jar target/stock-service-0.0.1-SNAPSHOT.jar
+java -jar target/order-fulfillment-service-0.0.1-SNAPSHOT.jar
+
