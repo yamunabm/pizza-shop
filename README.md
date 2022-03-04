@@ -108,13 +108,13 @@ response:
 }
 ```
 
-How to run:
-Make sure Zookeeper and kafka are running on default ports.
-hit the below command in the project home directory in the respective project
+How to run:<br />
+Make sure Zookeeper and kafka are running on default ports.<br />
+hit the below command in the project home directory in the respective project<br />
 
-java -jar target/order-service-0.0.1-SNAPSHOT.jar
-java -jar target/stock-service-0.0.1-SNAPSHOT.jar
-java -jar target/order-fulfillment-service-0.0.1-SNAPSHOT.jar
+java -jar target/order-service-0.0.1-SNAPSHOT.jar<br />
+java -jar target/stock-service-0.0.1-SNAPSHOT.jar<br />
+java -jar target/order-fulfillment-service-0.0.1-SNAPSHOT.jar<br />
 
 
 Note: Since no customer and payment services are present, all the information related to customer and payment are stored in order-service temporarily.
