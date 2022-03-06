@@ -29,8 +29,8 @@ public class Address implements Serializable {
 
 	@Id
 	@GeneratedValue(generator = Constants.ID_GENERATOR, strategy = GenerationType.IDENTITY)
-	@Column(name = "ADDRESS_ID")
-	private Long addressId;
+	@Column(name = "ID")
+	private Long id;
 
 	@Column(name = "CUSTOMER_ID")
 	private Long customerId;

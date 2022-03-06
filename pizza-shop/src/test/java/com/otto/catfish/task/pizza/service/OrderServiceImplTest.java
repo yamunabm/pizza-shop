@@ -4,9 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -33,14 +32,15 @@ import com.otto.catfish.pizza.order.exception.OrderServiceException;
 import com.otto.catfish.pizza.order.exception.OutOfStockException;
 import com.otto.catfish.pizza.order.exception.PaymentFailedException;
 import com.otto.catfish.pizza.order.io.AddressVO;
-import com.otto.catfish.pizza.order.io.ItemVO;
-import com.otto.catfish.pizza.order.io.OrderObject;
-import com.otto.catfish.pizza.order.io.OrderRequest;
 import com.otto.catfish.pizza.order.io.CRUDOrderResponse;
+import com.otto.catfish.pizza.order.io.ItemVO;
+import com.otto.catfish.pizza.order.io.OrderRequest;
 import com.otto.catfish.pizza.order.model.Address;
+import com.otto.catfish.pizza.order.model.Order;
 import com.otto.catfish.pizza.order.model.OrderItem;
 import com.otto.catfish.pizza.order.model.Payment;
 import com.otto.catfish.pizza.order.repository.AddressRepository;
+import com.otto.catfish.pizza.order.repository.OrderRepository;
 import com.otto.catfish.pizza.order.repository.PaymentRepository;
 import com.otto.catfish.pizza.order.service.OrderServiceImpl;
 
@@ -52,6 +52,9 @@ public class OrderServiceImplTest {
 
 	@Mock
 	private PaymentRepository paymentRepository;
+
+	@Mock
+	private OrderRepository orderRepository;
 
 	@Mock
 	private AddressRepository addressRepository;
@@ -72,7 +75,7 @@ public class OrderServiceImplTest {
 
 	private OrderRequest orderRequest;
 
-	private OrderObject orderObject;
+	private Order orderObject;
 
 	@BeforeEach
 	public void setUp() {
@@ -122,68 +125,69 @@ public class OrderServiceImplTest {
 		List<OrderItem> orderItems = new ArrayList<OrderItem>();
 
 		orderItems.add(new OrderItem(1L, null, 1L, 10, Collections.emptyList()));
-		orderObject = OrderObject.builder().orderId("1234").id(1L).addressId(1L).orderStatus(OrderEventType.DISPATCHED)
-				.build();
+		orderObject = Order.builder().orderId("1234").id(1L).addressId(1L).orderStatus(OrderEventType.DISPATCHED)
+				.items(orderItems).build();
 	}
 
 	@AfterEach
 	public void tearDown() {
 	}
 
-	// Failing after making integration test changes. Will correct it and un comment
-	//@Test
-	public void createOrderWithValidRequest_Success() throws PaymentFailedException, OrderServiceException, OutOfStockException {
-		doNothing().when(orderkafkaMessageSender).sendData(any());
+	@Test
+	public void createOrderWithValidRequest_Success()
+			throws PaymentFailedException, OrderServiceException, OutOfStockException {
+		when(restClientHandler.callGetStockCount(anyLong())).thenReturn(100);
 
-		Address addressEntity = new Address();
-		addressEntity.setAddressId(1L);
-		addressEntity.setAddress("#203, Royal road, Queen street");
-		addressEntity.setCity("Bangalore");
-		addressEntity.setZipCode("560048");
+		Payment payment = new Payment();
+		payment.setPaymentId(1);
+		payment.setPaymentType(PaymentType.CASH);
 
-		when(addressRepository.save(any())).thenReturn(addressEntity);
+		when(paymentRepository.save(any())).thenReturn(payment);
+		when(orderRepository.save(any())).thenReturn(new Order());
 
 		CRUDOrderResponse createOrder = orderService.createOrder(orderRequest);
-		verify(orderkafkaMessageSender).sendData(any());
-
 		assertNotNull(createOrder.getOrderId());
 
 	}
 
-	// Failing after making integration test changes. Will correct it and un comment
-	//@Test
+	@Test
+	public void createOrderWith_OutOfStockException()
+			throws PaymentFailedException, OrderServiceException, OutOfStockException {
+		when(restClientHandler.callGetStockCount(anyLong())).thenReturn(10);
+
+		Address addressEntity = new Address();
+		addressEntity.setId(1L);
+		addressEntity.setAddress("#203, Royal road, Queen street");
+		addressEntity.setCity("Bangalore");
+		addressEntity.setZipCode("560048");
+
+		Payment payment = new Payment();
+		payment.setPaymentId(1);
+		payment.setPaymentType(PaymentType.CASH);
+
+		assertThrows(OutOfStockException.class, () -> {
+			orderService.createOrder(orderRequest);
+		});
+	}
+
+	@Test
 	void cancelOrderWhenOrderIsNotYetDispatched() throws NotAllowedToCancelException, OrderServiceException {
-		doNothing().when(orderkafkaMessageSender).sendData(any());
+
 		orderObject.setOrderStatus(OrderEventType.PENDING);
-		when(restClientHandler.callGetOrder(anyString())).thenReturn(orderObject);
+		when(orderRepository.findByOrderId(anyString())).thenReturn(orderObject);
 
 		CRUDOrderResponse cancelOrder = orderService.cancelOrder("1234");
 
-		verify(orderkafkaMessageSender).sendData(any());
 		assertTrue(cancelOrder.getOrderId().equals("1234"));
 	}
 
-	// Failing after making integration test changes. Will correct it and un comment
-	//@Test
+	@Test
 	void cancelOrderWhenOrderIsDispatched_throwNotAllowedToCancelException() throws OrderServiceException {
-		when(restClientHandler.callGetOrder(anyString())).thenReturn(orderObject);
+		when(orderRepository.findByOrderId(anyString())).thenReturn(orderObject);
 
 		assertThrows(NotAllowedToCancelException.class, () -> {
 			orderService.cancelOrder("1234");
 		});
 	}
-
-	// success ---
-	// when all the input fields are provided
-	// when the toppings are specified
-	// when customer has entered the address at the time of order
-	// when no toppings specified
-	// when address not entered from the customer, then use the default address
-	// when the payment failed due to insufficient funds
-	// when payment failed due to service is down
-
-	// when user cancelled the order
-	// when user tries to cancel the order but the item is dispatched, since unble
-	// to cancel
 
 }

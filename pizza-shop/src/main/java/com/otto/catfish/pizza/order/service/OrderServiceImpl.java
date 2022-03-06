@@ -2,6 +2,7 @@ package com.otto.catfish.pizza.order.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,7 +75,7 @@ public class OrderServiceImpl implements OrderService {
 		// save address
 		if (orderRequest.getAddress().getAddressId() == null) {
 			Address saveAddress = saveAddress(orderRequest);
-			orderRequest.getAddress().setAddressId(saveAddress.getAddressId());
+			orderRequest.getAddress().setAddressId(saveAddress.getId());
 		}
 
 		updateItemOrderToppingMapping(orderRequest);
@@ -86,7 +87,7 @@ public class OrderServiceImpl implements OrderService {
 	private void lockOrder(OrderRequest orderRequest, String orderId)
 			throws OrderServiceException, OutOfStockException {
 
-		restClientHandler.setBaseUrl("http://localhost:9000/pizza/v1/item");
+		restClientHandler.setBaseUrl("http://stock-service:9000/pizza/v1/item/stock");
 
 		List<Item> stocks = new ArrayList<Item>();
 		for (ItemVO itemReq : orderRequest.getItems()) {
@@ -172,6 +173,7 @@ public class OrderServiceImpl implements OrderService {
 		// TODO rollback payment : payment-service
 
 		List<OrderItem> items = order.getItems();
+		
 		// update order status
 		updateOrderStatus(order);
 
@@ -200,21 +202,29 @@ public class OrderServiceImpl implements OrderService {
 	}
 
 	@Override
-	public OrderResponse findByOrderId(String orderId) {
+	public OrderResponse findByOrderId(String orderId) throws OrderServiceException {
+		
+		
 		Order order = orderRepository.findByOrderId(orderId);
+		
+		Optional<Address> address = addressRepository.findById(order.getAddressId());
 
-		OrderResponse orderResponse = BeanConversionAdapter.convertModelToOrderResponse(order);
+		restClientHandler.setBaseUrl("http://stock-service:9000/pizza/v1/item");
+
+		OrderResponse orderResponse = BeanConversionAdapter.convertModelToOrderResponse(order, address, restClientHandler);
 
 		return orderResponse;
 	}
 
 	@Override
-	public List<OrderResponse> findAll(Pageable pageable) {
+	public List<OrderResponse> findAll(Pageable pageable) throws OrderServiceException {
 		Page<Order> orders = orderRepository.findAll(pageable);
 		List<OrderResponse> orderResponseList = new ArrayList<OrderResponse>();
 
 		for (Order order : orders) {
-			OrderResponse orderResponse = BeanConversionAdapter.convertModelToOrderResponse(order);
+			Optional<Address> address = addressRepository.findById(order.getAddressId());
+			restClientHandler.setBaseUrl("http://stock-service:9000/pizza/v1/item");
+			OrderResponse orderResponse = BeanConversionAdapter.convertModelToOrderResponse(order, address, restClientHandler);
 
 			orderResponseList.add(orderResponse);
 		}

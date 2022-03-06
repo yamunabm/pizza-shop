@@ -1,4 +1,4 @@
-	package com.otto.catfish.pizza.order.clienthandler;
+package com.otto.catfish.pizza.order.clienthandler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.otto.catfish.pizza.order.exception.OrderServiceException;
 import com.otto.catfish.pizza.order.io.OrderObject;
+import com.otto.catfish.pizza.order.model.Item;
 
 @Component
 public class RestClientHandler {
@@ -73,6 +74,18 @@ public class RestClientHandler {
 			return body.get("stock");
 		} catch (RestClientException e) {
 			throw new OrderServiceException("Get item count failed over :" + baseUrl, e);
+		}
+	}
+
+	public Item callGetItem(Long itemId) throws OrderServiceException {
+		restTemplate = new RestTemplate();
+		try {
+			baseUrl = baseUrl + "/" + itemId;
+			Item item = this.restTemplate.exchange(baseUrl, HttpMethod.GET, new HttpEntity<>(getHeaders()), Item.class)
+					.getBody();
+			return item;
+		} catch (RestClientException e) {
+			throw new OrderServiceException("Get item failed over :" + baseUrl, e);
 		}
 	}
 

@@ -11,6 +11,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.otto.catfish.pizza.order.common.Constants;
 import com.otto.catfish.pizza.order.common.PizzaCrustType;
 import com.otto.catfish.pizza.order.common.PizzaSizeType;
@@ -43,6 +44,7 @@ public class Item implements Serializable {
 	private double unitPrice;
 	
 	@Column(name = "stock")
+	@JsonIgnore
 	private int stock;
 	
 	@NotNull

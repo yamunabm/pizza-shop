@@ -18,8 +18,8 @@ public interface OrderService {
 	
 	public CRUDOrderResponse cancelOrder(String orderId) throws NotAllowedToCancelException, OrderServiceException ;
 	
-	public List<OrderResponse> findAll(Pageable pageable);
+	public List<OrderResponse> findAll(Pageable pageable) throws OrderServiceException;
 
-	public OrderResponse findByOrderId(String orderId);
+	public OrderResponse findByOrderId(String orderId) throws OrderServiceException;
 
 }

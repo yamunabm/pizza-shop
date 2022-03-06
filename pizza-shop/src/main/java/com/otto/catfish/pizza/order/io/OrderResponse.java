@@ -25,7 +25,7 @@ public class OrderResponse {
 	
 	private Long customerId;
 
-	private Long addressId;
+	private AddressVO address;
 	
 	private Long paymentId;
 	

@@ -45,14 +45,15 @@ public class OrderController {
 	}
 
 	@GetMapping("/{orderId}")
-	public ResponseEntity<OrderResponse> getOrderById(@PathVariable("orderId") String orderId) {
+	public ResponseEntity<OrderResponse> getOrderById(@PathVariable("orderId") String orderId)
+			throws OrderServiceException {
 
 		OrderResponse order = orderService.findByOrderId(orderId);
 		return ResponseEntity.ok(order);
 	}
 
 	@GetMapping
-	public ResponseEntity<List<OrderResponse>> getOrders(Pageable pageable) {
+	public ResponseEntity<List<OrderResponse>> getOrders(Pageable pageable) throws OrderServiceException {
 
 		List<OrderResponse> order = orderService.findAll(pageable);
 		return ResponseEntity.ok(order);
