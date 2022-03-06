@@ -36,7 +36,7 @@ import com.otto.catfish.pizza.order.io.AddressVO;
 import com.otto.catfish.pizza.order.io.ItemVO;
 import com.otto.catfish.pizza.order.io.OrderObject;
 import com.otto.catfish.pizza.order.io.OrderRequest;
-import com.otto.catfish.pizza.order.io.OrderResponse;
+import com.otto.catfish.pizza.order.io.CRUDOrderResponse;
 import com.otto.catfish.pizza.order.model.Address;
 import com.otto.catfish.pizza.order.model.OrderItem;
 import com.otto.catfish.pizza.order.model.Payment;
@@ -143,7 +143,7 @@ public class OrderServiceImplTest {
 
 		when(addressRepository.save(any())).thenReturn(addressEntity);
 
-		OrderResponse createOrder = orderService.createOrder(orderRequest);
+		CRUDOrderResponse createOrder = orderService.createOrder(orderRequest);
 		verify(orderkafkaMessageSender).sendData(any());
 
 		assertNotNull(createOrder.getOrderId());
@@ -157,7 +157,7 @@ public class OrderServiceImplTest {
 		orderObject.setOrderStatus(OrderEventType.PENDING);
 		when(restClientHandler.callGetOrder(anyString())).thenReturn(orderObject);
 
-		OrderResponse cancelOrder = orderService.cancelOrder("1234");
+		CRUDOrderResponse cancelOrder = orderService.cancelOrder("1234");
 
 		verify(orderkafkaMessageSender).sendData(any());
 		assertTrue(cancelOrder.getOrderId().equals("1234"));

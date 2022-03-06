@@ -14,9 +14,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 import com.otto.catfish.pizza.order.common.Constants;
@@ -45,18 +43,19 @@ public class Order implements Serializable {
 	@GeneratedValue(generator = Constants.ID_GENERATOR, strategy = GenerationType.IDENTITY)
 	@Column(name = "ID")
 	private Long id;
-	
+
 	@Column(name = "ORDER_ID")
 	private String orderId;
-	
-	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	private Customer customer;
 
+	@Column(name = "CUSTOMER_ID")
+	private Long customerId;
+
+	@Column(name = "ADDRESS_ID")
 	private Long addressId;
-	
-	@OneToOne(targetEntity = Payment.class)
-	private Payment payment;
-	
+
+	@Column(name = "PAYMENT_ID")
+	private Long paymentId;
+
 	@Column(name = "TOTAL_PRICE")
 	private double totalPrice;
 
@@ -68,7 +67,7 @@ public class Order implements Serializable {
 	@Column(name = "TIMESTAMP")
 	private LocalDateTime orderTimestamp;
 
-	@OneToMany(targetEntity = OrderItem.class, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	@OneToMany(targetEntity = OrderItem.class, fetch = FetchType.EAGER, cascade = CascadeType.ALL)
 	@JoinColumn(name = "ORDER_ID", nullable = false)
 	private List<OrderItem> items;
 

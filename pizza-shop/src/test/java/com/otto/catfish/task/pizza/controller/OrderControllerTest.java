@@ -28,7 +28,7 @@ import com.otto.catfish.pizza.order.exception.PaymentFailedException;
 import com.otto.catfish.pizza.order.io.AddressVO;
 import com.otto.catfish.pizza.order.io.ItemVO;
 import com.otto.catfish.pizza.order.io.OrderRequest;
-import com.otto.catfish.pizza.order.io.OrderResponse;
+import com.otto.catfish.pizza.order.io.CRUDOrderResponse;
 import com.otto.catfish.pizza.order.model.Payment;
 import com.otto.catfish.pizza.order.repository.PaymentRepository;
 import com.otto.catfish.pizza.order.service.OrderService;
@@ -105,7 +105,7 @@ public class OrderControllerTest {
 
 	@Test
 	public void createOrderWithValidRequest_Success() throws PaymentFailedException, NotAllowedToCancelException, OrderServiceException, OutOfStockException {
-		ResponseEntity<OrderResponse> responseEntity = orderController.createOrder(orderRequest);
+		ResponseEntity<CRUDOrderResponse> responseEntity = orderController.createOrder(orderRequest);
 		assertThat(responseEntity.getStatusCodeValue()).isEqualTo(200);
 	}
 

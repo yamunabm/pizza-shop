@@ -6,32 +6,40 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.otto.catfish.pizza.order.adapter.BeanConversionAdapter;
 import com.otto.catfish.pizza.order.clienthandler.RestClientHandler;
 import com.otto.catfish.pizza.order.common.Constants;
 import com.otto.catfish.pizza.order.common.OrderEventType;
-import com.otto.catfish.pizza.order.datasender.OrderRequestMessageSender;
 import com.otto.catfish.pizza.order.datasender.StockUpdateMessageSender;
 import com.otto.catfish.pizza.order.exception.NotAllowedToCancelException;
 import com.otto.catfish.pizza.order.exception.OrderServiceException;
 import com.otto.catfish.pizza.order.exception.OutOfStockException;
 import com.otto.catfish.pizza.order.exception.PaymentFailedException;
 import com.otto.catfish.pizza.order.io.AddressVO;
+import com.otto.catfish.pizza.order.io.CRUDOrderResponse;
 import com.otto.catfish.pizza.order.io.ItemVO;
-import com.otto.catfish.pizza.order.io.OrderObject;
 import com.otto.catfish.pizza.order.io.OrderRequest;
 import com.otto.catfish.pizza.order.io.OrderResponse;
-import com.otto.catfish.pizza.order.io.OrderWrapper;
 import com.otto.catfish.pizza.order.io.StockRecord;
 import com.otto.catfish.pizza.order.model.Address;
 import com.otto.catfish.pizza.order.model.Item;
+import com.otto.catfish.pizza.order.model.ItemToppings;
+import com.otto.catfish.pizza.order.model.Order;
+import com.otto.catfish.pizza.order.model.OrderItem;
 import com.otto.catfish.pizza.order.model.Payment;
 import com.otto.catfish.pizza.order.repository.AddressRepository;
+import com.otto.catfish.pizza.order.repository.OrderRepository;
 import com.otto.catfish.pizza.order.repository.PaymentRepository;
 
 @Service
 public class OrderServiceImpl implements OrderService {
+
+	@Autowired
+	private OrderRepository orderRepository;
 
 	@Autowired
 	private PaymentRepository paymentRepository;
@@ -43,15 +51,13 @@ public class OrderServiceImpl implements OrderService {
 	private StockUpdateMessageSender stockMessageSender;
 
 	@Autowired
-	private OrderRequestMessageSender orderkafkaMessageSender;
-
 	private RestClientHandler restClientHandler;
 
 	@Value("${order.check.status.url}")
 	private String orderStatusUrl;
 
 	@Override
-	public OrderResponse createOrder(OrderRequest orderRequest)
+	public CRUDOrderResponse createOrder(OrderRequest orderRequest)
 			throws PaymentFailedException, OrderServiceException, OutOfStockException {
 
 		// TODO: generate order id and inject to request
@@ -71,18 +77,15 @@ public class OrderServiceImpl implements OrderService {
 			orderRequest.getAddress().setAddressId(saveAddress.getAddressId());
 		}
 
-		// Kafka: push order request to kafka
-		OrderWrapper orderWarapper = new OrderWrapper(OrderEventType.NEW, orderRequest);
-		orderkafkaMessageSender.sendData(orderWarapper);
+		updateItemOrderToppingMapping(orderRequest);
 
 		// return order Id with status code and location
-		return new OrderResponse(orderId, orderStatusUrl + orderId);
+		return new CRUDOrderResponse(orderId, orderStatusUrl + orderId);
 	}
 
 	private void lockOrder(OrderRequest orderRequest, String orderId)
 			throws OrderServiceException, OutOfStockException {
 
-		restClientHandler = new RestClientHandler();
 		restClientHandler.setBaseUrl("http://localhost:9000/pizza/v1/item");
 
 		List<Item> stocks = new ArrayList<Item>();
@@ -100,6 +103,36 @@ public class OrderServiceImpl implements OrderService {
 			stocks.add(item);
 		}
 		stockMessageSender.sendData(new StockRecord(orderId, stocks, Constants.DEDUCT_STOCK));
+	}
+
+	private Order updateItemOrderToppingMapping(OrderRequest orderRequest) {
+		List<OrderItem> orderItems = new ArrayList<OrderItem>(orderRequest.getItems().size());
+
+		Order order = BeanConversionAdapter.convertOrderRequestToModel(orderRequest);
+
+		for (ItemVO item : orderRequest.getItems()) {
+
+			OrderItem orderItem = new OrderItem();
+			orderItem.setOrder(order);
+			orderItem.setItemId(item.getItemId());
+			orderItem.setQuantity(item.getQuantity());
+			int[] toppingArray = item.getToppings();
+			List<ItemToppings> toppings = new ArrayList<ItemToppings>(toppingArray.length);
+			for (int toppingId : toppingArray) {
+				ItemToppings itemTopping = new ItemToppings();
+				itemTopping.setOrderItem(orderItem);
+				itemTopping.setToppingId(toppingId);
+				toppings.add(itemTopping);
+			}
+			orderItem.setToppings(toppings);
+			orderItems.add(orderItem);
+
+		}
+		order.setItems(orderItems);
+
+		orderRepository.save(order);
+		return order;
+
 	}
 
 	private Address saveAddress(OrderRequest orderRequest) {
@@ -128,41 +161,65 @@ public class OrderServiceImpl implements OrderService {
 	}
 
 	@Override
-	public OrderResponse cancelOrder(String orderId) throws NotAllowedToCancelException, OrderServiceException {
+	public CRUDOrderResponse cancelOrder(String orderId) throws NotAllowedToCancelException, OrderServiceException {
 
-		// get Order status from notification service TODO
+		Order order = orderRepository.findByOrderId(orderId);
 
-		restClientHandler = new RestClientHandler();
-		restClientHandler.setBaseUrl("http://localhost:8090/pizza/v1/orderfulfillment");
-		OrderObject callGetOrder = restClientHandler.callGetOrder(orderId);
-
-		if (!OrderEventType.isAllwedToCancel(callGetOrder.getOrderStatus().getStatusId())) {
+		if (!OrderEventType.isAllwedToCancel(order.getOrderStatus().getStatusId())) {
 			throw new NotAllowedToCancelException("Product is not allaowed to cancel.");
 		}
 
-		updateOrderStatus(orderId, OrderEventType.CANCELLED);
+		// TODO rollback payment : payment-service
 
-		// TODO rollback payment
+		List<OrderItem> items = order.getItems();
+		// update order status
+		updateOrderStatus(order);
 
 		// Restore stock
-		// restoreStock(order);
+		restoreStock(orderId, items);
 
-		return new OrderResponse(orderId, orderStatusUrl + orderId);
+		return new CRUDOrderResponse(orderId, orderStatusUrl + orderId);
 
 	}
 
-	private void updateOrderStatus(String orderId, OrderEventType cancelled) {
-		OrderRequest orderRequest = new OrderRequest();
-		orderRequest.setOrderId(orderId);
-		OrderWrapper orderWarapper = new OrderWrapper(OrderEventType.CANCELLED, orderRequest);
-		orderkafkaMessageSender.sendData(orderWarapper);
+	private void updateOrderStatus(Order order) {
+		order.setOrderStatus(OrderEventType.CANCELLED);
+		orderRepository.save(order);
 	}
 
-//
-//	@Override
-//	public OrderResponse cancelOrder(Long orderId) throws NotAllowedToCancelException {
-//		// TODO Auto-generated method stub
-//		return null;
-//	}
+	private void restoreStock(String orderId, List<OrderItem> items) {
+		List<Item> stocks = new ArrayList<Item>();
+		for (OrderItem itemReq : items) {
+			Item item = new Item();
+			item.setStock(itemReq.getQuantity());
+			item.setItemId(itemReq.getItemId());
+			stocks.add(item);
+		}
+		StockRecord stock = new StockRecord(orderId, stocks, Constants.RESTORE_STOCK);
+		stockMessageSender.sendData(stock);
+	}
+
+	@Override
+	public OrderResponse findByOrderId(String orderId) {
+		Order order = orderRepository.findByOrderId(orderId);
+
+		OrderResponse orderResponse = BeanConversionAdapter.convertModelToOrderResponse(order);
+
+		return orderResponse;
+	}
+
+	@Override
+	public List<OrderResponse> findAll(Pageable pageable) {
+		Page<Order> orders = orderRepository.findAll(pageable);
+		List<OrderResponse> orderResponseList = new ArrayList<OrderResponse>();
+
+		for (Order order : orders) {
+			OrderResponse orderResponse = BeanConversionAdapter.convertModelToOrderResponse(order);
+
+			orderResponseList.add(orderResponse);
+		}
+
+		return orderResponseList;
+	}
 
 }
