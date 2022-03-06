@@ -164,4 +164,8 @@ How to run:<br />
 
 
 Note: Since no customer and payment services are present, all the information related to customer and payment are stored in order-service temporarily.
-      But in the real case customer, payment services will be seperated.
+      But in the real case customer, payment services will be seperated.<br />
+      
+      **No validations are taken care, like checking if order id or address id or payment id or customer id is present or not. Because assuming that when user has selected any address, or user has logged in then by default user will have customer id and other neccessary information.**
+
+
