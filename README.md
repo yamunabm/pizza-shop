@@ -108,6 +108,42 @@ response:
 }
 ```
 
+get Order
+
+```json
+GET /pizza/v1/order/d865749e-9aa1-4170-b97c-cf79c954ce11 HTTP/1.1
+Host: http://localhost:8080
+HTTP/1.1 200 OK
+```
+
+response:
+```json
+[
+    {
+        "id": 1,
+        "orderId": "d865749e-9aa1-4170-b97c-cf79c954ce11",
+        "customerId": 1,
+        "addressId": 5,
+        "payment": {
+            "paymentId": 1,
+            "paymentType": "CASH"
+        },
+        "totalPrice": 112.0,
+        "orderStatus": "NEW",
+        "orderTimestamp": "2022-03-06T12:22:15.71",
+        "items": [
+            {
+                "itemId": 1,
+                "name": "Pizza",
+                "unitPrice": 150.0,
+                "pizzaSizeType": "SMALL",
+                "pizzaCrustType": "THIN"
+            }
+        ]
+    }
+]
+```
+
 How to run:<br />
 Make sure Zookeeper and kafka are running on default ports.<br />
 hit the below command in the project home directory in the respective project<br />
