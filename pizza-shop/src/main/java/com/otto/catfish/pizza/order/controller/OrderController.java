@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.otto.catfish.pizza.order.exception.NotAllowedToCancelException;
+import com.otto.catfish.pizza.order.exception.OrderNotFoundException;
 import com.otto.catfish.pizza.order.exception.OrderServiceException;
 import com.otto.catfish.pizza.order.exception.OutOfStockException;
 import com.otto.catfish.pizza.order.exception.PaymentFailedException;
@@ -38,7 +39,7 @@ public class OrderController {
 
 	@DeleteMapping("/{orderId}")
 	public ResponseEntity<CRUDOrderResponse> cancelOrder(@PathVariable("orderId") String orderId)
-			throws NotAllowedToCancelException, OrderServiceException {
+			throws NotAllowedToCancelException, OrderServiceException, OrderNotFoundException {
 
 		CRUDOrderResponse cancelOrder = orderService.cancelOrder(orderId);
 		return ResponseEntity.ok(cancelOrder);
@@ -46,7 +47,7 @@ public class OrderController {
 
 	@GetMapping("/{orderId}")
 	public ResponseEntity<OrderResponse> getOrderById(@PathVariable("orderId") String orderId)
-			throws OrderServiceException {
+			throws OrderServiceException, OrderNotFoundException {
 
 		OrderResponse order = orderService.findByOrderId(orderId);
 		return ResponseEntity.ok(order);

@@ -28,6 +28,7 @@ import com.otto.catfish.pizza.order.common.PizzaSizeType;
 import com.otto.catfish.pizza.order.datasender.OrderRequestMessageSender;
 import com.otto.catfish.pizza.order.datasender.StockUpdateMessageSender;
 import com.otto.catfish.pizza.order.exception.NotAllowedToCancelException;
+import com.otto.catfish.pizza.order.exception.OrderNotFoundException;
 import com.otto.catfish.pizza.order.exception.OrderServiceException;
 import com.otto.catfish.pizza.order.exception.OutOfStockException;
 import com.otto.catfish.pizza.order.exception.PaymentFailedException;
@@ -171,7 +172,7 @@ public class OrderServiceImplTest {
 	}
 
 	@Test
-	void cancelOrderWhenOrderIsNotYetDispatched() throws NotAllowedToCancelException, OrderServiceException {
+	void cancelOrderWhenOrderIsNotYetDispatched() throws NotAllowedToCancelException, OrderServiceException, OrderNotFoundException {
 
 		orderObject.setOrderStatus(OrderEventType.PENDING);
 		when(orderRepository.findByOrderId(anyString())).thenReturn(orderObject);

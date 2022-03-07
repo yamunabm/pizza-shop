@@ -17,6 +17,7 @@ import com.otto.catfish.pizza.order.common.Constants;
 import com.otto.catfish.pizza.order.common.OrderEventType;
 import com.otto.catfish.pizza.order.datasender.StockUpdateMessageSender;
 import com.otto.catfish.pizza.order.exception.NotAllowedToCancelException;
+import com.otto.catfish.pizza.order.exception.OrderNotFoundException;
 import com.otto.catfish.pizza.order.exception.OrderServiceException;
 import com.otto.catfish.pizza.order.exception.OutOfStockException;
 import com.otto.catfish.pizza.order.exception.PaymentFailedException;
@@ -36,6 +37,9 @@ import com.otto.catfish.pizza.order.repository.AddressRepository;
 import com.otto.catfish.pizza.order.repository.OrderRepository;
 import com.otto.catfish.pizza.order.repository.PaymentRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class OrderServiceImpl implements OrderService {
 
@@ -57,11 +61,14 @@ public class OrderServiceImpl implements OrderService {
 	@Value("${order.check.status.url}")
 	private String orderStatusUrl;
 
+	@Value("${stock.get.item.url}")
+	private String getItemUrl;
+
 	@Override
 	public CRUDOrderResponse createOrder(OrderRequest orderRequest)
 			throws PaymentFailedException, OrderServiceException, OutOfStockException {
 
-		// TODO: generate order id and inject to request
+		// generate order id and inject to request
 		String orderId = UUID.randomUUID().toString();
 		orderRequest.setOrderId(orderId);
 
@@ -157,23 +164,29 @@ public class OrderServiceImpl implements OrderService {
 			Payment payment = paymentRepository.save(orderRequest.getPayment());
 			return payment;
 		} catch (Exception e) {
+			log.error("Payment failed!", e.getMessage());
 			throw new PaymentFailedException(e.getMessage());
 		}
 	}
 
 	@Override
-	public CRUDOrderResponse cancelOrder(String orderId) throws NotAllowedToCancelException, OrderServiceException {
+	public CRUDOrderResponse cancelOrder(String orderId)
+			throws NotAllowedToCancelException, OrderServiceException, OrderNotFoundException {
 
 		Order order = orderRepository.findByOrderId(orderId);
 
+		if (null == order) {
+			throw new OrderNotFoundException("Order " + orderId + " is not found.");
+		}
 		if (!OrderEventType.isAllwedToCancel(order.getOrderStatus().getStatusId())) {
+			log.debug("Product is not allaowed to cancel.");
 			throw new NotAllowedToCancelException("Product is not allaowed to cancel.");
 		}
 
 		// TODO rollback payment : payment-service
 
 		List<OrderItem> items = order.getItems();
-		
+
 		// update order status
 		updateOrderStatus(order);
 
@@ -202,16 +215,15 @@ public class OrderServiceImpl implements OrderService {
 	}
 
 	@Override
-	public OrderResponse findByOrderId(String orderId) throws OrderServiceException {
-		
-		
+	public OrderResponse findByOrderId(String orderId) throws OrderServiceException, OrderNotFoundException {
+
 		Order order = orderRepository.findByOrderId(orderId);
-		
-		Optional<Address> address = addressRepository.findById(order.getAddressId());
 
-		restClientHandler.setBaseUrl("http://stock-service:9000/pizza/v1/item");
+		if (null == order) {
+			throw new OrderNotFoundException("Order " + orderId + " is not found.");
+		}
 
-		OrderResponse orderResponse = BeanConversionAdapter.convertModelToOrderResponse(order, address, restClientHandler);
+		OrderResponse orderResponse = getOrderResponse(order);
 
 		return orderResponse;
 	}
@@ -222,14 +234,21 @@ public class OrderServiceImpl implements OrderService {
 		List<OrderResponse> orderResponseList = new ArrayList<OrderResponse>();
 
 		for (Order order : orders) {
-			Optional<Address> address = addressRepository.findById(order.getAddressId());
-			restClientHandler.setBaseUrl("http://stock-service:9000/pizza/v1/item");
-			OrderResponse orderResponse = BeanConversionAdapter.convertModelToOrderResponse(order, address, restClientHandler);
-
+			OrderResponse orderResponse = getOrderResponse(order);
 			orderResponseList.add(orderResponse);
 		}
 
 		return orderResponseList;
+	}
+
+	private OrderResponse getOrderResponse(Order order) throws OrderServiceException {
+		Optional<Address> address = addressRepository.findById(order.getAddressId());
+
+		restClientHandler.setBaseUrl(getItemUrl);
+
+		OrderResponse orderResponse = BeanConversionAdapter.convertModelToOrderResponse(order, address,
+				restClientHandler);
+		return orderResponse;
 	}
 
 }
