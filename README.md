@@ -1,7 +1,7 @@
 # pizza-shop
 Pizza Online Application
 
-**Requirement:**. <br />
+## Requirement
 Build next capabilities to pizza online shop:  
     1. Customer can order a pizza in the online shop;  
     2. Customer can select additional ingredients/toppings in the order;  
@@ -10,16 +10,12 @@ Build next capabilities to pizza online shop:
     5. Customer is allowed to cancel the order if order is not yet sent for delivery;  
     6. Customer can verify the status/details of the order.  
 
-**Solution**. <br />
-To accomplish the above requirement, I have created two micro services.  
+## Solution
+To accomplish the above requirement, I have created two microservices.  
 
 Order-service: Responsible for creating and updating order.  
 stock-service: Responsible for loading, updating, get stock details  
 
-In this repository Order-service code is present.  
-And for stock-service code is present at:  
-
-https://github.com/yamunabm/stock-service. <br />
 
 **Create Order:**<br />
 check order quantity
@@ -45,9 +41,9 @@ lombokv
 Junit<br />
 Postman<br />
 
-**API:**<br />
+##  List of APIs
 
-Create Order<br />
+## Create Order<br />
 
 ```json
 POST /pizza/v1/order HTTP/1.1
@@ -91,7 +87,7 @@ response:
 }
 ```
 
-Cancel Order
+## Cancel Order
 
 ```json
 DELETE /pizza/v1/order/d865749e-9aa1-4170-b97c-cf79c954ce11 HTTP/1.1
@@ -107,7 +103,7 @@ response:
 }
 ```
 
-get Order
+## get order
 
 ```json
 GET /pizza/v1/order/d865749e-9aa1-4170-b97c-cf79c954ce11 HTTP/1.1
@@ -148,11 +144,11 @@ response:
 ]
 ```
 
-How to run:<br />
+## How to run:<br />
 
-1. microservices are docorized and using docker-compose for the same.<br />
-2. Clone the projects and make sure you are able to build in local using maven<br />
-> mvn clean install<br />
+1. microservices are dockerized and using docker-compose for the same.<br />
+2. Clone the projects:<br />
+   https://github.com/yamunabm/pizza-shop
 3. goto order-service project home directory and run build-order-service.sh<br />
 > ./build-order-service.sh<br />
 4. goto stock-service project home directory and run build-order-service.sh<br />
@@ -163,9 +159,10 @@ How to run:<br />
 
 
 
-Note: Since no customer and payment services are present, all the information related to customer and payment are stored in order-service temporarily.
-      But in the real case customer, payment services will be seperated.<br />
-      
-      **No validations are taken care, like checking if order id or address id or payment id or customer id is present or not. Because assuming that when user has selected any address, or user has logged in then by default user will have customer id and other neccessary information.**
+Note: 
+1. Since no customer and payment services are present, all the information related to customer and payment are stored in order-service temporarily.
+   But in the real case customer, payment services will be seperated.<br />
+2. Here both the projects are present in the same repositories. but practically, there will be each repository for each project.   
+3. No validations are taken care, like checking if order id or address id or payment id or customer id is present or not. Because assuming that when user has selected any address, or user has logged in then by default user will have customer id and other neccessary information.**
 
 

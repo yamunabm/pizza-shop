@@ -8,13 +8,13 @@
 		<version>2.6.3</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.otto.catfish.pizza.order</groupId>
-	<artifactId>order-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<groupId>com.otto.catfish.pizza.stock</groupId>
+	<artifactId>stock-service</artifactId>
 	<packaging>jar</packaging>
 
-	<name>pizza-order-service</name>
+	<name>pizza-stock-service</name>
 	<url>http://maven.apache.org</url>
+
 
 	<dependencies>
 		<dependency>
@@ -47,7 +47,6 @@
 			<groupId>org.springframework.kafka</groupId>
 			<artifactId>spring-kafka</artifactId>
 		</dependency>
-		
 	</dependencies>
 
 	<build>
